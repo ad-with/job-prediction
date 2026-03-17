@@ -1,0 +1,65 @@
+:root {
+  --bg-primary: #f8fafc; /* Very light gray/blue tint for background */
+  --bg-secondary: #ffffff; /* White panels */
+  --bg-card: rgba(255, 255, 255, 0.85); /* Translucent white for glass */
+  --text-primary: #0f172a; /* Near black */
+  --text-secondary: #64748b; /* Slate gray */
+  --accent-cyan: #0284c7; /* Sky blue/cyan adjusted for contrast */
+  --accent-purple: #7c3aed; /* Deep purple */
+  --border-color: rgba(0, 0, 0, 0.08); /* Subtle dark border */
+  --glass-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
+  --glass-blur: blur(16px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  /* Very soft background gradients for depth */
+  background-image: radial-gradient(circle at 15% 50%, rgba(2, 132, 199, 0.05), transparent 30%),
+                    radial-gradient(circle at 85% 30%, rgba(124, 58, 237, 0.04), transparent 30%);
+  background-attachment: fixed;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-color);
+}
+
+/* Glass panel utility */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
