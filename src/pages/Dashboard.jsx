@@ -1,34 +1,12 @@
 import { 
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LabelList
 } from 'recharts';
-import { Briefcase, Target, DollarSign, TrendingUp, Monitor } from 'lucide-react';
+import { Briefcase, Target, DollarSign, TrendingUp, Monitor, Zap, CheckCircle2, AlertCircle } from 'lucide-react';
+import { usePrediction } from '../context/PredictionContext';
 import './Dashboard.css';
 
-// --- MOCK DATA ---
-const demandData = [
-  { month: 'Jan', demand: 400 },
-  { month: 'Feb', demand: 550 },
-  { month: 'Mar', demand: 600 },
-  { month: 'Apr', demand: 750 },
-  { month: 'May', demand: 820 },
-  { month: 'Jun', demand: 980 },
-];
-
-const skillsData = [
-  { name: 'Python', value: 95 },
-  { name: 'JavaScript', value: 88 },
-  { name: 'SQL', value: 85 },
-  { name: 'AWS', value: 78 },
-  { name: 'Docker', value: 75 },
-];
-
-const domainData = [
-  { name: 'Machine Learning', value: 400, color: '#06b6d4' },
-  { name: 'Data Engineering', value: 300, color: '#8b5cf6' },
-  { name: 'Cloud Architecture', value: 300, color: '#3b82f6' },
-  { name: 'Full Stack Dev', value: 200, color: '#ec4899' },
-];
+import { roleAnalytics, domainDistribution } from '../data/dashboardData';
 
 // Reusable mini sparkline wrapper
 const SparkLine = ({ data, dataKey, color }) => (
@@ -59,24 +37,63 @@ const StatCard = ({ title, value, icon: Icon, color, sparklineData, sparklineKey
 );
 
 export default function Dashboard() {
+  const { predictionData } = usePrediction();
+  
+  // Dynamic fallback mapping
+  const displayRole = predictionData?.role || "Software Engineer";
+  const displayMatch = predictionData?.match ? `${predictionData.match}%` : "N/A";
+  const missingSkills = predictionData?.missingSkills || ["Node.js", "System Design"];
+  
+  // Safely extract role analytics or default to Software Engineer if unmatched
+  const analytics = roleAnalytics[displayRole] || roleAnalytics["Software Engineer"];
+  
+  const displaySkill = analytics.topSkills[0]?.name || "Unknown";
+  const demandData = analytics.demandTrend;
+  const skillsData = [...analytics.topSkills].sort((a,b) => b.value - a.value);
+
+  // Custom tooltips
+  const CustomLineTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-md border border-slate-100 flex flex-col pointer-events-none">
+          <p className="font-semibold text-slate-700 text-sm mb-1">{label}</p>
+          <p className="text-[#06b6d4] font-bold text-sm">Index: {payload[0].value}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const CustomBarTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 rounded-xl shadow-md border border-slate-100 flex flex-col pointer-events-none">
+          <p className="font-semibold text-slate-700 text-sm mb-1">{label}</p>
+          <p className="text-[#8b5cf6] font-bold text-sm">Relevance: {payload[0].value}%</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="dashboard-container">
-      <header className="page-header">
-        <h1 className="page-title">Career Analytics Dashboard</h1>
-        <p className="page-subtitle">AI-powered insights based on your profile and market data.</p>
+      <header className="page-header text-center">
+        <h1 className="page-title text-3xl font-bold text-slate-900 mt-4 mb-2">Career Analytics Dashboard</h1>
+        <p className="page-subtitle text-slate-500 mb-8">AI-powered insights based on your profile and market data.</p>
       </header>
       
-      {/* Top Statistic Cards */}
+      {/* Top Statistic Cards (UNCHANGED) */}
       <div className="stats-grid">
         <StatCard 
           title="Predicted Role" 
-          value="AI Engineer" 
+          value={displayRole} 
           icon={Briefcase} 
           color="#06b6d4" 
         />
         <StatCard 
           title="Match Score" 
-          value="92%" 
+          value={displayMatch} 
           icon={Target} 
           color="#10b981" 
           sparklineData={demandData}
@@ -84,7 +101,7 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Avg Salary" 
-          value="$145k" 
+          value={analytics.salary} 
           icon={DollarSign} 
           color="#8b5cf6" 
           sparklineData={demandData}
@@ -92,7 +109,7 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Demand Growth" 
-          value="+24%" 
+          value={analytics.growth} 
           icon={TrendingUp} 
           color="#f59e0b" 
           sparklineData={demandData}
@@ -100,82 +117,137 @@ export default function Dashboard() {
         />
         <StatCard 
           title="Top Skill" 
-          value="Python" 
+          value={displaySkill} 
           icon={Monitor} 
           color="#ec4899" 
         />
       </div>
 
-      {/* Charts Section */}
-      <div className="charts-grid">
+      {/* New Insights & Recommendations Section */}
+      <div className="insights-section w-full mb-2">
+        <h3 className="chart-title text-slate-800 font-bold text-lg mb-6 inline-block relative">Insights & Recommendations</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* AI Summary Card */}
+          <div className="stat-card glass-panel bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col text-left">
+            <h4 className="text-slate-800 font-bold mb-4 flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Zap size={20} className="text-amber-500 fill-amber-500" /> AI Summary
+            </h4>
+            <p className="text-sm text-slate-600 leading-relaxed">
+              You are a <strong className="text-slate-800 font-semibold">strong match</strong> for the <strong className="text-indigo-600">{displayRole}</strong> role. 
+              Capitalizing on your core competencies and acquiring high-priority missing skills will significantly elevate your market competitiveness.
+            </p>
+          </div>
+
+          {/* Recommended Actions */}
+          <div className="stat-card glass-panel bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col text-left">
+            <h4 className="text-slate-800 font-bold mb-4 flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Target size={20} className="text-emerald-500" /> Recommended Actions
+            </h4>
+            <ul className="flex flex-col gap-3">
+              {missingSkills.slice(0, 2).map((skill, idx) => (
+                <li key={`rec-${idx}`} className="flex gap-2 items-start text-sm text-slate-600">
+                  <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                  <span>Learn <strong className="text-slate-800 font-medium">{skill}</strong></span>
+                </li>
+              ))}
+              <li className="flex gap-2 items-start text-sm text-slate-600">
+                <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
+                <span>Build 2 production-ready projects</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Skill Insights */}
+          <div className="stat-card glass-panel bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col text-left">
+            <h4 className="text-slate-800 font-bold mb-4 flex items-center gap-2 border-b border-slate-50 pb-3">
+              <Monitor size={20} className="text-indigo-500" /> Skill Insights
+            </h4>
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Strong Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {skillsData.slice(0, 3).map((s, i) => (
+                    <span key={`strong-${i}`} className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded text-xs font-semibold">
+                      {s.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase tracking-wider mb-2">Missing Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {missingSkills.slice(0, 2).map((s, i) => (
+                    <span key={`miss-${i}`} className="bg-rose-50 text-rose-700 border border-rose-100 px-2 py-1 rounded text-xs font-semibold">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+      {/* Original Side-by-Side Charts Layout from Screenshot */}
+      <div className="charts-grid w-full pb-8">
+        
         {/* Line Chart */}
-        <div className="chart-card glass-panel">
-          <h3 className="chart-title">Job Demand Trend</h3>
-          <div className="chart-wrapper">
+        <div className="chart-card glass-panel flex flex-col pt-6 px-6 pb-2 w-full">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="chart-title !mb-0 text-slate-800 font-bold text-lg">Job Demand Trend</h3>
+            <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+              <TrendingUp size={14} /> Demand is steadily increasing
+            </span>
+          </div>
+          <div className="chart-wrapper flex-1 w-full min-h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={demandData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                <XAxis dataKey="month" stroke="#64748b" tick={{ fill: '#64748b' }} />
-                <YAxis stroke="#64748b" tick={{ fill: '#64748b' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  itemStyle={{ color: '#0f172a' }}
+              <LineChart data={demandData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="month" stroke="#94a3b8" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomLineTooltip />} cursor={{ stroke: 'rgba(6, 182, 212, 0.2)', strokeWidth: 2 }} />
+                <Line 
+                  type="monotone" 
+                  dataKey="demand" 
+                  stroke="#06b6d4" 
+                  strokeWidth={3} 
+                  dot={{ fill: '#ffffff', stroke: '#06b6d4', strokeWidth: 2, r: 4 }} 
+                  activeDot={{ r: 8, fill: '#06b6d4', stroke: '#ffffff', strokeWidth: 3 }} 
+                  animationDuration={1500}
                 />
-                <Line type="monotone" dataKey="demand" stroke="#06b6d4" strokeWidth={3} dot={{ fill: '#131432', stroke: '#06b6d4', strokeWidth: 2, r: 4 }} activeDot={{ r: 6 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Bar Chart */}
-        <div className="chart-card glass-panel">
-          <h3 className="chart-title">Top Programming Skills</h3>
-          <div className="chart-wrapper">
+        <div className="chart-card glass-panel flex flex-col pt-6 px-6 pb-2 w-full">
+          <div className="mb-6">
+            <h3 className="chart-title !mb-0 text-slate-800 font-bold text-lg">Top Programming Skills</h3>
+          </div>
+          <div className="chart-wrapper flex-1 w-full min-h-[300px] pl-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={skillsData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
-                <XAxis type="number" stroke="#64748b" tick={{ fill: '#64748b' }} />
-                <YAxis dataKey="name" type="category" stroke="#64748b" tick={{ fill: '#64748b' }} width={80} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(0,0,0,0.05)' }}
-                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  itemStyle={{ color: '#0f172a' }}
-                />
-                <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
+              <BarChart data={skillsData} layout="vertical" barCategoryGap="20%" margin={{ top: 0, right: 50, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" stroke="#94a3b8" tick={{ fill: '#64748b' }} axisLine={false} tickLine={false} />
+                <YAxis dataKey="name" type="category" stroke="#475569" fontWeight={500} tick={{ fill: '#475569', fontSize: 13 }} width={100} axisLine={false} tickLine={false} />
+                <Tooltip content={<CustomBarTooltip />} cursor={{ fill: '#f8fafc' }} />
+                <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]} animationDuration={1500}>
+                  <LabelList 
+                    dataKey="value" 
+                    position="right" 
+                    formatter={(val) => `${val}%`} 
+                    style={{ fill: '#64748b', fontSize: 12, fontWeight: 600 }} 
+                    offset={8}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-
-        {/* Pie Chart */}
-        <div className="chart-card glass-panel full-width">
-          <h3 className="chart-title">Career Domain Distribution</h3>
-          <div className="chart-wrapper pie-wrapper">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={domainData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                  stroke="none"
-                >
-                  {domainData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                  itemStyle={{ color: '#0f172a' }}
-                />
-                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{ paddingTop: '20px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        
       </div>
     </div>
   );

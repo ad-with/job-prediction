@@ -6,9 +6,11 @@ import ResumeAnalyzer from './pages/ResumeAnalyzer'
 import SkillGapAnalysis from './pages/SkillGapAnalysis'
 import JobMarketTrends from './pages/JobMarketTrends'
 import CareerRoadmap from './pages/CareerRoadmap'
+import Courses from './pages/Courses'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { PredictionProvider } from './context/PredictionContext'
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -35,7 +37,9 @@ function App() {
           path="/dashboard" 
           element={
             <ProtectedRoute>
-              <Layout />
+              <PredictionProvider>
+                <Layout />
+              </PredictionProvider>
             </ProtectedRoute>
           }
         >
@@ -45,6 +49,7 @@ function App() {
           <Route path="skills" element={<SkillGapAnalysis />} />
           <Route path="trends" element={<JobMarketTrends />} />
           <Route path="roadmap" element={<CareerRoadmap />} />
+          <Route path="courses" element={<Courses />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

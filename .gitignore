@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.env
+.venv/
+__pycache__/
+*.pyc
+*.log
+test_output*.txt
+test_log.txt
+debug_output.txt
+model_artifacts/

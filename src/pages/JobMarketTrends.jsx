@@ -3,6 +3,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Activity, Globe, Code2 } from 'lucide-react';
+import { usePrediction } from '../context/PredictionContext';
 import './JobMarketTrends.css';
 
 const techDemandData = [
@@ -21,6 +22,15 @@ const salaryData = [
 ];
 
 export default function JobMarketTrends() {
+  const { predictionData } = usePrediction();
+  const predictedRole = predictionData?.role;
+
+  const displaySalaryData = [...salaryData];
+  if (predictedRole && !displaySalaryData.find(s => s.role === predictedRole)) {
+    displaySalaryData.unshift({ role: predictedRole, min: 110, median: 145, max: 190 });
+    if (displaySalaryData.length > 5) displaySalaryData.pop();
+  }
+
   return (
     <div className="trends-container">
       <header className="page-header">
@@ -88,7 +98,7 @@ export default function JobMarketTrends() {
           <p className="panel-desc">Median salary ranges across top technical roles.</p>
           <div className="chart-wrapper bar-chart">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryData} layout="vertical">
+              <BarChart data={displaySalaryData} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
                 <XAxis type="number" stroke="#64748b" />
                 <YAxis dataKey="role" type="category" stroke="#64748b" width={100} />
